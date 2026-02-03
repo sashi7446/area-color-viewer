@@ -55,3 +55,13 @@ htmlcov/
 # Generated CSV (except samples)
 *.csv
 !dashboard_colors.csv
+
+# Image files
+*.png
+*.jpg
+*.jpeg
+*.webp
+
+# AI
+.claude
+.gemini
