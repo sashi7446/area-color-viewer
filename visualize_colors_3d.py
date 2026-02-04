@@ -2,91 +2,13 @@
 """3D scatter plot visualization of color data in OKLCH color space."""
 
 import argparse
-import csv
 import math
 import sys
 from pathlib import Path
 
-import numpy as np
 import plotly.graph_objects as go
 
-
-def srgb_to_linear(c: float) -> float:
-    """Convert sRGB component (0-1) to linear RGB."""
-    if c <= 0.04045:
-        return c / 12.92
-    return ((c + 0.055) / 1.055) ** 2.4
-
-
-def linear_srgb_to_oklab(r: float, g: float, b: float) -> tuple[float, float, float]:
-    """Convert linear sRGB to OKLab.
-
-    Based on Björn Ottosson's formulas:
-    https://bottosson.github.io/posts/oklab/
-    """
-    l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b
-    m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b
-    s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b
-
-    # Cube root (handle negative values)
-    l_ = np.cbrt(l)
-    m_ = np.cbrt(m)
-    s_ = np.cbrt(s)
-
-    L = 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_
-    a = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_
-    b_val = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
-
-    return L, a, b_val
-
-
-def oklab_to_oklch(L: float, a: float, b: float) -> tuple[float, float, float]:
-    """Convert OKLab to OKLCH (polar coordinates)."""
-    C = math.sqrt(a * a + b * b)
-    H = math.atan2(b, a)  # in radians
-    H_deg = math.degrees(H)
-    if H_deg < 0:
-        H_deg += 360
-    return L, C, H_deg
-
-
-def rgb_to_oklch(r: int, g: int, b: int) -> tuple[float, float, float]:
-    """Convert RGB (0-255) to OKLCH.
-
-    Returns:
-        tuple: (L, C, H) where L is 0-1, C is 0-~0.4, H is 0-360 degrees
-    """
-    # Normalize to 0-1
-    r_norm = r / 255.0
-    g_norm = g / 255.0
-    b_norm = b / 255.0
-
-    # Convert to linear sRGB
-    r_lin = srgb_to_linear(r_norm)
-    g_lin = srgb_to_linear(g_norm)
-    b_lin = srgb_to_linear(b_norm)
-
-    # Convert to OKLab
-    L, a, b_val = linear_srgb_to_oklab(r_lin, g_lin, b_lin)
-
-    # Convert to OKLCH
-    return oklab_to_oklch(L, a, b_val)
-
-
-def load_colors_csv(csv_path: str) -> list[dict]:
-    """Load color data from CSV file."""
-    colors = []
-    with open(csv_path, "r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            colors.append({
-                "Hex": row["Hex"],
-                "R": int(row["R"]),
-                "G": int(row["G"]),
-                "B": int(row["B"]),
-                "Count": int(row["Count"]),
-            })
-    return colors
+from color_utils import load_colors_csv, rgb_to_oklch
 
 
 def create_3d_scatter(colors: list[dict], output_path: str, max_count: int | None = None) -> None:

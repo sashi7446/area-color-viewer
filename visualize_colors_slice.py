@@ -2,77 +2,11 @@
 """Hue slice visualization: L-C plane with interactive hue wheel selector."""
 
 import argparse
-import csv
 import json
-import math
 import sys
 from pathlib import Path
 
-import numpy as np
-
-
-def srgb_to_linear(c: float) -> float:
-    """Convert sRGB component (0-1) to linear RGB."""
-    if c <= 0.04045:
-        return c / 12.92
-    return ((c + 0.055) / 1.055) ** 2.4
-
-
-def linear_srgb_to_oklab(r: float, g: float, b: float) -> tuple[float, float, float]:
-    """Convert linear sRGB to OKLab."""
-    l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b
-    m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b
-    s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b
-
-    l_ = np.cbrt(l)
-    m_ = np.cbrt(m)
-    s_ = np.cbrt(s)
-
-    L = 0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_
-    a = 1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_
-    b_val = 0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
-
-    return L, a, b_val
-
-
-def oklab_to_oklch(L: float, a: float, b: float) -> tuple[float, float, float]:
-    """Convert OKLab to OKLCH (polar coordinates)."""
-    C = math.sqrt(a * a + b * b)
-    H = math.atan2(b, a)
-    H_deg = math.degrees(H)
-    if H_deg < 0:
-        H_deg += 360
-    return L, C, H_deg
-
-
-def rgb_to_oklch(r: int, g: int, b: int) -> tuple[float, float, float]:
-    """Convert RGB (0-255) to OKLCH."""
-    r_norm = r / 255.0
-    g_norm = g / 255.0
-    b_norm = b / 255.0
-
-    r_lin = srgb_to_linear(r_norm)
-    g_lin = srgb_to_linear(g_norm)
-    b_lin = srgb_to_linear(b_norm)
-
-    L, a, b_val = linear_srgb_to_oklab(r_lin, g_lin, b_lin)
-    return oklab_to_oklch(L, a, b_val)
-
-
-def load_colors_csv(csv_path: str) -> list[dict]:
-    """Load color data from CSV file."""
-    colors = []
-    with open(csv_path, "r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            colors.append({
-                "Hex": row["Hex"],
-                "R": int(row["R"]),
-                "G": int(row["G"]),
-                "B": int(row["B"]),
-                "Count": int(row["Count"]),
-            })
-    return colors
+from color_utils import load_colors_csv, rgb_to_oklch
 
 
 def generate_html(colors_oklch: list[dict],
@@ -288,20 +222,43 @@ def generate_html(colors_oklch: list[dict],
             return hist;
         }}
 
-        // Convert hue to approximate RGB for display
-        function hueToRgb(h) {{
-            const s = 0.8, l = 0.5;
-            const c = (1 - Math.abs(2 * l - 1)) * s;
-            const x = c * (1 - Math.abs((h / 60) % 2 - 1));
-            const m = l - c / 2;
-            let r, g, b;
-            if (h < 60) {{ r = c; g = x; b = 0; }}
-            else if (h < 120) {{ r = x; g = c; b = 0; }}
-            else if (h < 180) {{ r = 0; g = c; b = x; }}
-            else if (h < 240) {{ r = 0; g = x; b = c; }}
-            else if (h < 300) {{ r = x; g = 0; b = c; }}
-            else {{ r = c; g = 0; b = x; }}
-            return `rgb(${{Math.round((r + m) * 255)}}, ${{Math.round((g + m) * 255)}}, ${{Math.round((b + m) * 255)}})`;
+        // Convert OKLCH to sRGB
+        // Uses fixed L=0.7, C=0.14 for wheel display (good sRGB coverage)
+        function oklchToRgb(hDeg, L = 0.7, C = 0.14) {{
+            // OKLCH -> OKLab (polar to Cartesian)
+            const hRad = hDeg * Math.PI / 180;
+            const a = C * Math.cos(hRad);
+            const b = C * Math.sin(hRad);
+
+            // OKLab -> Linear sRGB via LMS
+            const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+            const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+            const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+
+            const l = l_ * l_ * l_;
+            const m = m_ * m_ * m_;
+            const s = s_ * s_ * s_;
+
+            // LMS -> Linear sRGB
+            let rLin = +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
+            let gLin = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+            let bLin = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s;
+
+            // Clamp to sRGB gamut
+            rLin = Math.max(0, Math.min(1, rLin));
+            gLin = Math.max(0, Math.min(1, gLin));
+            bLin = Math.max(0, Math.min(1, bLin));
+
+            // Linear sRGB -> sRGB (gamma correction)
+            function linearToSrgb(c) {{
+                return c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1/2.4) - 0.055;
+            }}
+
+            const r = Math.round(linearToSrgb(rLin) * 255);
+            const g = Math.round(linearToSrgb(gLin) * 255);
+            const bVal = Math.round(linearToSrgb(bLin) * 255);
+
+            return `rgb(${{r}}, ${{g}}, ${{bVal}})`;
         }}
 
         function drawWheel() {{
@@ -323,9 +280,9 @@ def generate_html(colors_oklch: list[dict],
                 const normalizedHeight = currentHistogram[i] / maxHist;
                 const barRadius = innerRadius + (outerRadius - innerRadius) * normalizedHeight;
 
-                // Color based on hue
+                // Color based on OKLCH hue
                 const hue = i * binSize + binSize / 2;
-                ctx.fillStyle = hueToRgb(hue);
+                ctx.fillStyle = oklchToRgb(hue);
                 ctx.globalAlpha = 0.6;
 
                 ctx.beginPath();

@@ -2,4 +2,40 @@
 ピクセルノイズがある画像から、人間が遠目から見た「平された色」を抽出したいときに使えます。
 スポイトツールで何度もクリックする代わりに、OKLCH色空間で色相、彩度、明度を見ながら納得できる色選びを可能にします。
 
-開発用ドキュメント >> [value-scenario.md](value-scenario.md)
+## プロジェクト構成
+
+```
+├── extract_colors.py      # 画像から色を抽出してCSV出力
+├── visualize_colors_3d.py # OKLCH空間での3D散布図を生成
+├── visualize_colors_slice.py # 色相スライスビューアを生成
+├── color_utils.py         # 共通ユーティリティ（色変換、ファイルI/O）
+└── color-extractor/       # Claude Code skill
+```
+
+## 使い方
+
+```bash
+# 1. 画像から色を抽出
+python extract_colors.py image.png -o colors.csv
+
+# 2. 3D散布図を生成
+python visualize_colors_3d.py colors.csv -o scatter.html
+
+# 3. 色相スライスビューアを生成
+python visualize_colors_slice.py colors.csv -o slice.html
+```
+
+## 共通ユーティリティ (color_utils.py)
+
+色変換やファイルI/Oは `color_utils.py` に集約されています。
+
+**色変換:**
+- `rgb_to_oklch(r, g, b)` - RGB(0-255) → OKLCH (L:0-1, C:0-0.4, H:0-360)
+- `oklch_to_rgb(L, C, H)` - OKLCH → RGB(0-255)、sRGB色域外はクランプ
+- `is_in_srgb_gamut(L, C, H)` - OKLCH色がsRGB色域内かを判定
+- `rgb_to_hex(r, g, b)` - RGB → "#RRGGBB"
+- `hex_to_rgb(hex_str)` - "#RRGGBB" → (r, g, b)
+
+**ファイルI/O:**
+- `load_colors_csv(path)` - CSVから色データを読み込み
+- `save_colors_to_csv(colors, path)` - 色データをCSVに保存

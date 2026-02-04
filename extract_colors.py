@@ -2,23 +2,15 @@
 """Extract all color codes from an image and output as CSV."""
 
 import argparse
-import csv
 import sys
 from collections import Counter
 from pathlib import Path
 
 from PIL import Image
 
+from color_utils import hex_to_rgb, rgb_to_hex, save_colors_to_csv
+
 TARGET_PIXELS = 500000
-
-
-def rgb_to_hex(r: int, g: int, b: int) -> str:
-    return f"#{r:02X}{g:02X}{b:02X}"
-
-
-def hex_to_rgb(hex_color: str) -> tuple:
-    h = hex_color.lstrip("#")
-    return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
 
 
 def get_colors_from_image(image_path: str, verbose: bool = True) -> list[dict]:
@@ -81,26 +73,6 @@ def get_colors_from_image(image_path: str, verbose: bool = True) -> list[dict]:
         })
 
     return colors
-
-
-def save_colors_to_csv(colors: list[dict], output_path: str) -> None:
-    """Save color data to CSV file.
-
-    Args:
-        colors: List of dicts with keys: Hex, R, G, B, Count
-        output_path: Path to output CSV file
-    """
-    with open(output_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Hex", "R", "G", "B", "Count"])
-        for color in colors:
-            writer.writerow([
-                color["Hex"],
-                color["R"],
-                color["G"],
-                color["B"],
-                color["Count"],
-            ])
 
 
 def extract_colors(image_path: str, output_path: str) -> None:

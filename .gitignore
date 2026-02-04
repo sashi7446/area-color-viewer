@@ -65,3 +65,5 @@ htmlcov/
 # AI
 .claude
 .gemini
+
+test_*.html
