@@ -2,12 +2,8 @@
 ピクセルノイズがある画像から、人間が遠目から見た「平された色」を抽出したいときに使えます。
 スポイトツールで何度もクリックする代わりに、OKLCH色空間で色相、彩度、明度を見ながら納得できる色選びを可能にします。
 
-## 📊 オンラインプレビュー
-
-GitHub Pagesで生成されたビジュアライゼーションをブラウザで確認できます：
-
-- **[3D散布図を見る](https://sashi7446.github.io/area-color-viewer/color_scatter_3d.html)** - OKLCH色空間での色分布を3D表示
-- **[色相スライスビューアを見る](https://sashi7446.github.io/area-color-viewer/color_slice_viewer.html)** - 色相ごとの色を分析
+- [3D散布図を見る](https://sashi7446.github.io/area-color-viewer/color_scatter_3d.html) - OKLCH色空間での色分布を3D表示
+- [色相スライスビューアを見る](https://sashi7446.github.io/area-color-viewer/color_slice_viewer.html) - 色相ごとの色を分析
 
 ## プロジェクト構成
 
@@ -46,19 +42,3 @@ python visualize_colors_slice.py colors.csv -o slice.html
 **ファイルI/O:**
 - `load_colors_csv(path)` - CSVから色データを読み込み
 - `save_colors_to_csv(colors, path)` - 色データをCSVに保存
-
-## GitHub Pagesの設定方法
-
-上記のオンラインプレビューリンクを機能させるには、GitHub Pagesを有効にする必要があります：
-
-1. GitHubのリポジトリページで **Settings** タブを開く
-2. 左サイドバーから **Pages** を選択
-3. **Source** セクションで以下を設定：
-   - **Branch**: `main`（またはデフォルトブランチ）を選択
-   - **Folder**: `/ (root)` を選択
-4. **Save** をクリック
-5. 数分待つとGitHub Pagesが有効になります
-
-GitHub Pagesが有効になると、HTMLファイルが以下のURLでアクセス可能になります：
-- `https://sashi7446.github.io/area-color-viewer/color_scatter_3d.html`
-- `https://sashi7446.github.io/area-color-viewer/color_slice_viewer.html`
