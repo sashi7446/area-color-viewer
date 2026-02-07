@@ -55,6 +55,57 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,monospace;ba
 .hue-legend{display:flex;gap:0;height:8px;border-radius:3px;overflow:hidden;flex:1;max-width:240px;margin:0 8px;border:1px solid #3a3840}
 .hue-legend div{flex:1;min-width:0;cursor:pointer;position:relative}
 .hue-legend div:hover::after{content:attr(data-hue);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#222;color:#ccc;font-size:9px;padding:1px 4px;border-radius:2px;white-space:nowrap;pointer-events:none;margin-bottom:2px}
+
+/* --- Responsive: Tablet (<=900px) --- */
+@media(max-width:900px){
+  .toolbar{gap:8px;padding:6px 10px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;scrollbar-width:thin}
+  .toolbar-divider{display:none}
+  .toolbar-section{flex-shrink:0}
+  .dual-range{width:90px}
+  .filter-val{min-width:60px;font-size:10px}
+  .single-range{width:70px}
+  .views-grid{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+}
+
+/* --- Responsive: Mobile (<=600px) --- */
+@media(max-width:600px){
+  body{overflow:auto;height:auto}
+  .app{height:auto;min-height:100vh;min-height:100dvh}
+  .toolbar{gap:6px;padding:6px 8px;min-height:40px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;scrollbar-width:thin}
+  .toolbar::-webkit-scrollbar{height:3px}
+  .toolbar::-webkit-scrollbar-thumb{background:#555;border-radius:2px}
+  .toolbar-section{flex-shrink:0}
+  .toolbar-section label{font-size:10px}
+  .toolbar-divider{display:none}
+  .dual-range{width:70px}
+  .filter-val{min-width:50px;font-size:9px}
+  .single-range{width:60px}
+  .btn{padding:5px 12px;font-size:12px;min-height:32px;touch-action:manipulation}
+  /* Larger touch targets for sliders */
+  .dual-range input[type=range]::-webkit-slider-thumb{width:18px;height:18px;margin-top:-7px}
+  .dual-range input[type=range]::-moz-range-thumb{width:18px;height:18px}
+  .single-range input[type=range]::-webkit-slider-thumb{width:18px;height:18px}
+  .single-range input[type=range]::-moz-range-thumb{width:18px;height:18px}
+  /* Single column grid with fixed-height panels */
+  .views-grid{grid-template-columns:1fr;grid-template-rows:repeat(4,300px);gap:2px;padding:2px;flex:none}
+  .view-panel{min-height:0}
+  .view-header{padding:3px 8px;font-size:10px}
+  .view-header span{font-size:10px}
+  .hue-legend{max-width:120px;height:6px}
+  /* Info bar */
+  .info-bar{gap:8px;padding:6px 10px;font-size:10px;flex-wrap:wrap;position:sticky;bottom:0;z-index:10;min-height:32px}
+  .info-swatch{width:20px;height:20px}
+  .selection-info{margin-left:0;width:100%}
+  .voxel-tooltip{font-size:10px;max-width:200px}
+}
+
+/* --- Responsive: Small mobile (<=400px) --- */
+@media(max-width:400px){
+  .views-grid{grid-template-rows:repeat(4,260px)}
+  .dual-range{width:55px}
+  .filter-val{min-width:40px;font-size:8px}
+  .btn{padding:4px 8px;font-size:11px}
+}
 </style>
 </head>
 <body>
@@ -528,13 +579,14 @@ const darkAxis = {gridcolor:'#333', zerolinecolor:'#444', tickfont:{color:'#999'
 const darkBg = {paper_bgcolor:'#2a2830', plot_bgcolor:'#1e1c21'};
 
 function layout3d() {
+  const m = isMobile();
   return {
     ...darkBg,
     margin:{l:0,r:0,b:0,t:0},
     scene:{
-      xaxis:{title:'C·cos(H)', range:[-.4,.4], ...darkAxis},
-      yaxis:{title:'C·sin(H)', range:[-.4,.4], ...darkAxis},
-      zaxis:{title:'Lightness (L)', range:[0,1], ...darkAxis},
+      xaxis:{title:m?'':'C·cos(H)', range:[-.4,.4], ...darkAxis},
+      yaxis:{title:m?'':'C·sin(H)', range:[-.4,.4], ...darkAxis},
+      zaxis:{title:m?'L':'Lightness (L)', range:[0,1], ...darkAxis},
       aspectmode:'manual', aspectratio:{x:1,y:1,z:1.3},
       camera:{eye:{x:1.6,y:1.6,z:0.9}, up:{x:0,y:0,z:1}},
       bgcolor:'#1e1c21',
@@ -544,31 +596,34 @@ function layout3d() {
   };
 }
 function layoutLC() {
+  const m = isMobile();
   return {
     ...darkBg,
-    margin:{l:44,r:10,b:36,t:6},
-    xaxis:{title:'Chroma (C)', range:[0,0.4], ...darkAxis},
-    yaxis:{title:'Lightness (L)', range:[0,1], ...darkAxis},
+    margin:m?{l:36,r:6,b:30,t:4}:{l:44,r:10,b:36,t:6},
+    xaxis:{title:m?'C':'Chroma (C)', range:[0,0.4], ...darkAxis},
+    yaxis:{title:m?'L':'Lightness (L)', range:[0,1], ...darkAxis},
     showlegend:false, hovermode:'closest', dragmode:'select',
   };
 }
 function layoutCH() {
+  const m = isMobile();
   return {
     ...darkBg,
-    margin:{l:36,r:10,b:36,t:6},
-    xaxis:{title:'C·cos(H)', range:[-.4,.4], ...darkAxis, scaleanchor:'y', scaleratio:1},
-    yaxis:{title:'C·sin(H)', range:[-.4,.4], ...darkAxis},
+    margin:m?{l:30,r:6,b:30,t:4}:{l:36,r:10,b:36,t:6},
+    xaxis:{title:m?'':'C·cos(H)', range:[-.4,.4], ...darkAxis, scaleanchor:'y', scaleratio:1},
+    yaxis:{title:m?'':'C·sin(H)', range:[-.4,.4], ...darkAxis},
     shapes: polarShapes(),
     annotations: polarAnnotations(),
     showlegend:false, hovermode:'closest', dragmode:'select',
   };
 }
 function layoutLH() {
+  const m = isMobile();
   return {
     ...darkBg,
-    margin:{l:44,r:10,b:36,t:6},
-    xaxis:{title:'Hue (H°)', range:[0,360], dtick:60, ...darkAxis},
-    yaxis:{title:'Lightness (L)', range:[0,1], ...darkAxis},
+    margin:m?{l:36,r:6,b:30,t:4}:{l:44,r:10,b:36,t:6},
+    xaxis:{title:m?'H°':'Hue (H°)', range:[0,360], dtick:m?90:60, ...darkAxis},
+    yaxis:{title:m?'L':'Lightness (L)', range:[0,1], ...darkAxis},
     showlegend:false, hovermode:'closest', dragmode:'select',
   };
 }
@@ -585,14 +640,27 @@ function renderAll() {
   });
 }
 
+function isMobile() { return window.innerWidth <= 600; }
+
+function plotConfig() {
+  const cfg = {displayModeBar: true, responsive: true, displaylogo: false,
+    modeBarButtonsToRemove: ['sendDataToCloud','lasso2d']};
+  if (isMobile()) {
+    cfg.displayModeBar = false;
+    cfg.scrollZoom = false;
+  }
+  return cfg;
+}
+
 function _doRender() {
   applyFilters();
   computeVoxels();
 
-  Plotly.react('view3d', buildTraces3d(), layout3d());
-  Plotly.react('viewLC', buildTracesLC(), layoutLC());
-  Plotly.react('viewCH', buildTracesCH(), layoutCH());
-  Plotly.react('viewLH', buildTracesLH(), layoutLH());
+  const cfg = plotConfig();
+  Plotly.react('view3d', buildTraces3d(), layout3d(), cfg);
+  Plotly.react('viewLC', buildTracesLC(), layoutLC(), cfg);
+  Plotly.react('viewCH', buildTracesCH(), layoutCH(), cfg);
+  Plotly.react('viewLH', buildTracesLH(), layoutLH(), cfg);
 
   attachEvents();
   updateStats();
@@ -965,6 +1033,18 @@ window.addEventListener('resize', () => {
   clearTimeout(window._resizeTimer);
   window._resizeTimer = setTimeout(handleResize, 150);
 });
+// Also handle orientation change on mobile
+window.addEventListener('orientationchange', () => {
+  clearTimeout(window._resizeTimer);
+  window._resizeTimer = setTimeout(handleResize, 300);
+});
+// Handle visualViewport resize (mobile address bar show/hide)
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    clearTimeout(window._resizeTimer);
+    window._resizeTimer = setTimeout(handleResize, 150);
+  });
+}
 
 // ================================================================
 // HUE LEGEND
