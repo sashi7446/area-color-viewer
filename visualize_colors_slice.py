@@ -141,6 +141,69 @@ def generate_html(colors_oklch: list[dict],
             cursor: pointer;
             border: none;
         }}
+
+        /* --- Responsive: Tablet (<=900px) --- */
+        @media (max-width: 900px) {{
+            .container {{
+                flex-direction: column;
+                align-items: center;
+            }}
+            .scatter-panel {{
+                width: 100%;
+            }}
+            #scatterPlot {{
+                height: 500px;
+            }}
+        }}
+
+        /* --- Responsive: Mobile (<=600px) --- */
+        @media (max-width: 600px) {{
+            body {{
+                padding: 10px;
+            }}
+            .container {{
+                flex-direction: column;
+                align-items: center;
+                gap: 12px;
+            }}
+            .wheel-panel {{
+                padding: 12px;
+                width: 100%;
+                max-width: 360px;
+            }}
+            .wheel-panel h2 {{
+                font-size: 14px;
+                margin-bottom: 10px;
+            }}
+            .hue-display {{
+                font-size: 20px;
+            }}
+            .hue-range, .point-count {{
+                font-size: 12px;
+            }}
+            .scatter-panel {{
+                padding: 12px;
+                width: 100%;
+            }}
+            .scatter-panel h2 {{
+                font-size: 14px;
+                margin-bottom: 10px;
+            }}
+            #scatterPlot {{
+                height: 350px;
+            }}
+            .range-control label {{
+                font-size: 12px;
+            }}
+            .range-control input[type="range"]::-webkit-slider-thumb {{
+                width: 22px;
+                height: 22px;
+            }}
+            .range-control input[type="range"]::-moz-range-thumb {{
+                width: 22px;
+                height: 22px;
+            }}
+        }}
     </style>
 </head>
 <body>
@@ -201,13 +264,33 @@ def generate_html(colors_oklch: list[dict],
             updateScatterPlot();
         }});
 
-        // Canvas setup
+        // Canvas setup with responsive sizing
         const canvas = document.getElementById('wheelCanvas');
         const ctx = canvas.getContext('2d');
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-        const outerRadius = 180;
-        const innerRadius = 100;
+
+        function resizeCanvas() {{
+            const maxSize = Math.min(400, window.innerWidth - 64);
+            canvas.width = maxSize;
+            canvas.height = maxSize;
+            canvas.style.width = maxSize + 'px';
+            canvas.style.height = maxSize + 'px';
+        }}
+        resizeCanvas();
+
+        let centerX, centerY, outerRadius, innerRadius;
+        function updateCanvasMetrics() {{
+            centerX = canvas.width / 2;
+            centerY = canvas.height / 2;
+            outerRadius = canvas.width * 0.45;
+            innerRadius = canvas.width * 0.25;
+        }}
+        updateCanvasMetrics();
+
+        window.addEventListener('resize', () => {{
+            resizeCanvas();
+            updateCanvasMetrics();
+            drawWheel();
+        }});
 
         // Compute histogram dynamically based on minChroma
         function computeHistogram() {{
