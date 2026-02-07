@@ -79,6 +79,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,monospace;ba
 .selection-info{margin-left:auto;color:#aaa}
 .voxel-tooltip{position:fixed;background:#333;border:1px solid #555;border-radius:6px;padding:8px 12px;font-size:11px;color:#ddd;pointer-events:none;z-index:1000;display:none;max-width:260px;box-shadow:0 4px 12px rgba(0,0,0,.5)}
 .voxel-tooltip .vt-swatch{width:20px;height:20px;border-radius:3px;border:1px solid #666;display:inline-block;vertical-align:middle;margin-right:6px}
+.hue-legend{display:flex;gap:0;height:8px;border-radius:3px;overflow:hidden;flex:1;max-width:240px;margin:0 8px;border:1px solid #3a3840}
+.hue-legend div{flex:1;min-width:0;cursor:pointer;position:relative}
+.hue-legend div:hover::after{content:attr(data-hue);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#222;color:#ccc;font-size:9px;padding:1px 4px;border-radius:2px;white-space:nowrap;pointer-events:none;margin-bottom:2px}
 </style>
 </head>
 <body>
@@ -141,7 +144,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,monospace;ba
     <div class="view-container"><div id="view3d"></div></div>
   </div>
   <div class="view-panel">
-    <div class="view-header"><span>L — C Plane (Front View)</span><span id="statLC"></span></div>
+    <div class="view-header"><span>L — C Plane (Front View)</span><div class="hue-legend" id="hueLegend"></div><span id="statLC"></span></div>
     <div class="view-container"><div id="viewLC"></div></div>
   </div>
   <div class="view-panel">
@@ -181,6 +184,14 @@ const pts = RAW.map((d, i) => {
     cx: d.C * Math.cos(hRad),
     cy: d.C * Math.sin(hRad),
   };
+});
+
+// Precompute vivid "pure hue" border color for each point.
+// Uses L=0.7, C=0.2 in OKLCH — high chroma for clear hue identification.
+// Out-of-gamut values are clamped, preserving dominant hue.
+const hueHexCache = pts.map(d => {
+  const rgb = oklchToRgb(0.7, 0.2, d.H);
+  return rgbHex(rgb[0], rgb[1], rgb[2]);
 });
 
 // ================================================================
@@ -310,11 +321,24 @@ function ptOpacities(indices, sel) {
   const hasSel = sel.size > 0;
   return indices.map(i => (!hasSel || sel.has(i)) ? 1.0 : 0.08);
 }
+function ptBorderColors(indices, sel) {
+  const hasSel = sel.size > 0;
+  return indices.map(i => {
+    if (hasSel && !sel.has(i)) return 'rgba(80,80,80,0.12)';
+    return hueHexCache[i];
+  });
+}
 
 function voxelSizes() {
   if (voxels.length === 0) return [];
   const mx = Math.max(...voxels.map(v=>v.tot));
   return voxels.map(v => 4 + 20 * Math.sqrt(v.tot / mx));
+}
+function voxelBorderColors() {
+  return voxels.map(v => {
+    const rgb = oklchToRgb(0.7, 0.2, v.H);
+    return rgbHex(rgb[0], rgb[1], rgb[2]);
+  });
 }
 
 // ================================================================
@@ -349,7 +373,8 @@ function buildTraces3d() {
       x: filtered.map(i=>pts[i].cx),
       y: filtered.map(i=>pts[i].cy),
       z: filtered.map(i=>pts[i].L),
-      marker:{size:2.5, color:ptColors(filtered,selected), opacity:0.85},
+      marker:{size:2.5, color:ptColors(filtered,selected), opacity:0.85,
+              line:{color:ptBorderColors(filtered,selected), width:0.5}},
       text: ptHoverText(filtered),
       hoverinfo:'text', customdata: filtered,
     });
@@ -359,7 +384,7 @@ function buildTraces3d() {
       type:'scatter3d', mode:'markers', name:'Voxels',
       x: voxels.map(v=>v.cx), y: voxels.map(v=>v.cy), z: voxels.map(v=>v.L),
       marker:{size:voxelSizes(), color:voxels.map(v=>v.hex), opacity:0.6,
-              line:{color:'rgba(255,255,255,0.2)', width:0.5}},
+              line:{color:voxelBorderColors(), width:0.8}},
       text: voxelHoverText(),
       hoverinfo:'text',
     });
@@ -386,7 +411,7 @@ function buildTracesLC() {
       x: filtered.map(i=>pts[i].C),
       y: filtered.map(i=>pts[i].L),
       marker:{size:4, color:ptColors(filtered,selected),
-              line:{color:'rgba(255,255,255,0.15)', width:0.3}},
+              line:{color:ptBorderColors(filtered,selected), width:1.0}},
       text: ptHoverText(filtered),
       hoverinfo:'text', customdata: filtered,
       selected:{marker:{opacity:1}}, unselected:{marker:{opacity:0.08}},
@@ -397,7 +422,7 @@ function buildTracesLC() {
       type:'scattergl', mode:'markers', name:'Voxels',
       x: voxels.map(v=>v.C), y: voxels.map(v=>v.L),
       marker:{size:voxelSizes(), color:voxels.map(v=>v.hex), opacity:0.55,
-              line:{color:'rgba(255,255,255,0.3)', width:0.5}},
+              line:{color:voxelBorderColors(), width:0.8}},
       text: voxelHoverText(), hoverinfo:'text',
     });
   }
@@ -423,7 +448,7 @@ function buildTracesCH() {
       x: filtered.map(i=>pts[i].cx),
       y: filtered.map(i=>pts[i].cy),
       marker:{size:4, color:ptColors(filtered,selected),
-              line:{color:'rgba(255,255,255,0.15)', width:0.3}},
+              line:{color:ptBorderColors(filtered,selected), width:1.0}},
       text: ptHoverText(filtered),
       hoverinfo:'text', customdata: filtered,
       selected:{marker:{opacity:1}}, unselected:{marker:{opacity:0.08}},
@@ -434,7 +459,7 @@ function buildTracesCH() {
       type:'scattergl', mode:'markers', name:'Voxels',
       x: voxels.map(v=>v.cx), y: voxels.map(v=>v.cy),
       marker:{size:voxelSizes(), color:voxels.map(v=>v.hex), opacity:0.55,
-              line:{color:'rgba(255,255,255,0.3)', width:0.5}},
+              line:{color:voxelBorderColors(), width:0.8}},
       text: voxelHoverText(), hoverinfo:'text',
     });
   }
@@ -460,7 +485,7 @@ function buildTracesLH() {
       x: filtered.map(i=>pts[i].H),
       y: filtered.map(i=>pts[i].L),
       marker:{size:4, color:ptColors(filtered,selected),
-              line:{color:'rgba(255,255,255,0.15)', width:0.3}},
+              line:{color:ptBorderColors(filtered,selected), width:1.0}},
       text: ptHoverText(filtered),
       hoverinfo:'text', customdata: filtered,
       selected:{marker:{opacity:1}}, unselected:{marker:{opacity:0.08}},
@@ -471,7 +496,7 @@ function buildTracesLH() {
       type:'scattergl', mode:'markers', name:'Voxels',
       x: voxels.map(v=>v.H), y: voxels.map(v=>v.L),
       marker:{size:voxelSizes(), color:voxels.map(v=>v.hex), opacity:0.55,
-              line:{color:'rgba(255,255,255,0.3)', width:0.5}},
+              line:{color:voxelBorderColors(), width:0.8}},
       text: voxelHoverText(), hoverinfo:'text',
     });
   }
@@ -615,14 +640,15 @@ function updateStats() {
 // ================================================================
 function updateHighlight() {
   const colors = ptColors(filtered, selected);
+  const borderColors = ptBorderColors(filtered, selected);
   const showPts = showMode === 'points' || showMode === 'both';
   if (!showPts) return;
 
   try {
-    Plotly.restyle('view3d', {'marker.color':[colors]}, [0]);
-    Plotly.restyle('viewLC', {'marker.color':[colors]}, [0]);
-    Plotly.restyle('viewCH', {'marker.color':[colors]}, [0]);
-    Plotly.restyle('viewLH', {'marker.color':[colors]}, [0]);
+    Plotly.restyle('view3d', {'marker.color':[colors], 'marker.line.color':[borderColors]}, [0]);
+    Plotly.restyle('viewLC', {'marker.color':[colors], 'marker.line.color':[borderColors]}, [0]);
+    Plotly.restyle('viewCH', {'marker.color':[colors], 'marker.line.color':[borderColors]}, [0]);
+    Plotly.restyle('viewLH', {'marker.color':[colors], 'marker.line.color':[borderColors]}, [0]);
   } catch(e) {}
 
   // Selection info
@@ -968,9 +994,25 @@ window.addEventListener('resize', () => {
 });
 
 // ================================================================
+// HUE LEGEND
+// ================================================================
+function buildHueLegend() {
+  const el = document.getElementById('hueLegend');
+  if (!el) return;
+  for (let h = 0; h < 360; h += 10) {
+    const seg = document.createElement('div');
+    const rgb = oklchToRgb(0.7, 0.2, h + 5);
+    seg.style.background = rgbHex(rgb[0], rgb[1], rgb[2]);
+    seg.setAttribute('data-hue', h + '°');
+    el.appendChild(seg);
+  }
+}
+
+// ================================================================
 // INIT
 // ================================================================
 function init() {
+  buildHueLegend();
   setupFilters();
   renderAll();
 }
