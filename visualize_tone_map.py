@@ -343,19 +343,18 @@ def _generate_html(data_json: str, l_divs: int, c_divs: int) -> str:
         const tooltipEl = document.getElementById('tooltip');
         const margin = {{ top: 20, right: 30, bottom: 50, left: 60 }};
 
-        function updateCanvasSize() {{
-            const targetCell = 70;
-            canvas.width = margin.left + margin.right + cDivs * targetCell;
-            canvas.height = margin.top + margin.bottom + lDivs * targetCell;
-        }}
+        // Fixed plot area — L=0~1 and C=0~0.35 always map to the same pixels
+        const PLOT_W = 980;
+        const PLOT_H = 700;
+        canvas.width = margin.left + margin.right + PLOT_W;
+        canvas.height = margin.top + margin.bottom + PLOT_H;
 
         // ── Rendering ──
         function render() {{
-            updateCanvasSize();
             const W = canvas.width;
             const H = canvas.height;
-            const plotW = W - margin.left - margin.right;
-            const plotH = H - margin.top - margin.bottom;
+            const plotW = PLOT_W;
+            const plotH = PLOT_H;
 
             const cellW = plotW / cDivs;
             const cellH = plotH / lDivs;
