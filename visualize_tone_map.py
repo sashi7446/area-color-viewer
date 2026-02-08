@@ -181,6 +181,7 @@ def _generate_html(data_json: str, l_divs: int, c_divs: int) -> str:
 <body>
     <div class="header">
         <h1>OKLCH Tone Map — Lightness × Chroma Distribution</h1>
+        <p style="font-size:12px;color:#888;margin-bottom:10px;">塗りの透明度＝該当ピクセル数。該当数0の場合は枠線が半透明、色域外の場合は非表示。</p>
         <div class="controls">
             <div class="control-group">
                 <label>L divisions:</label>
