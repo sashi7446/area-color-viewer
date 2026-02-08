@@ -74,13 +74,13 @@
         .canvas-wrap {
             max-width: 1400px;
             margin: 0 auto;
-            overflow: auto;
             background: #3a383e;
             border-radius: 12px;
             padding: 16px;
         }
         #toneMap {
             display: block;
+            width: 100%;
         }
         .tooltip {
             position: fixed;
@@ -294,18 +294,29 @@
         const tooltipEl = document.getElementById('tooltip');
         const margin = { top: 20, right: 30, bottom: 50, left: 60 };
 
-        // Fixed plot area — L=0~1 and C=0~0.35 always map to the same pixels
-        const PLOT_W = 980;
-        const PLOT_H = 700;
-        canvas.width = margin.left + margin.right + PLOT_W;
-        canvas.height = margin.top + margin.bottom + PLOT_H;
+        // ── Responsive sizing ──
+        // Plot area fills container width, height fits viewport
+        function getPlotSize() {
+            const wrap = document.querySelector('.canvas-wrap');
+            const wrapPad = 32; // 16px * 2
+            const plotW = Math.max(300, wrap.clientWidth - wrapPad - margin.left - margin.right);
+
+            const headerH = document.querySelector('.header').offsetHeight;
+            const legendH = document.querySelector('.legend').offsetHeight;
+            const usedH = headerH + legendH + 72; // paddings + gaps
+            const plotH = Math.max(250, window.innerHeight - usedH - margin.top - margin.bottom);
+
+            return { plotW, plotH };
+        }
 
         // ── Rendering ──
         function render() {
+            const { plotW, plotH } = getPlotSize();
+            canvas.width = margin.left + margin.right + plotW;
+            canvas.height = margin.top + margin.bottom + plotH;
+
             const W = canvas.width;
             const H = canvas.height;
-            const plotW = PLOT_W;
-            const plotH = PLOT_H;
 
             const cellW = plotW / cDivs;
             const cellH = plotH / lDivs;
@@ -561,6 +572,13 @@
 
         lSlider.addEventListener('input', onSliderChange);
         cSlider.addEventListener('input', onSliderChange);
+
+        // ── Resize ──
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(render, 100);
+        });
 
         // ── Init ──
         computeMaxGamutC();
